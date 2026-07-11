@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MagiskFlorida</title>
+<style>
+  :root { --bg:#0f1115; --card:#1a1d24; --fg:#e6e8ee; --mut:#8b92a5; --acc:#4f9cff; --ok:#38c172; --off:#e0554e; --line:#2a2e38; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; padding:env(safe-area-inset-top) 16px 40px; }
+  h1 { font-size:20px; margin:24px 0 4px; }
+  .sub { color:var(--mut); font-size:13px; margin-bottom:20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:16px; }
+  .status { display:flex; align-items:center; gap:12px; }
+  .dot { width:12px; height:12px; border-radius:50%; background:var(--mut); flex:none; }
+  .dot.on { background:var(--ok); box-shadow:0 0 10px var(--ok); }
+  .dot.off { background:var(--off); }
+  .status .label { font-size:17px; font-weight:600; }
+  .row { display:flex; gap:12px; margin-top:16px; }
+  button { flex:1; border:0; border-radius:10px; padding:13px; font-size:15px; font-weight:600; color:#fff; background:var(--acc); }
+  button:active { opacity:.7; }
+  button.stop { background:var(--off); }
+  button:disabled { opacity:.4; }
+  .kv { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .kv:last-child { border-bottom:0; }
+  .kv .k { color:var(--mut); }
+  .kv .v { font-family:ui-monospace,monospace; }
+  code { display:block; background:#0b0d11; border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:8px; font:12px/1.5 ui-monospace,monospace; color:#cfe3ff; overflow-x:auto; white-space:pre; }
+  .hint { color:var(--mut); font-size:12px; margin-top:10px; }
+</style>
+</head>
+<body>
+  <h1>MagiskFlorida</h1>
+  <div class="sub">Anti-detection frida-server control</div>
+
+  <div class="card">
+    <div class="status"><span id="dot" class="dot"></span><span id="label" class="label">Checking…</span></div>
+    <div class="row">
+      <button id="start" onclick="doStart()" disabled>Start</button>
+      <button id="stop" class="stop" onclick="doStop()" disabled>Stop</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="kv"><span class="k">Binary</span><span class="v" id="bin">—</span></div>
+    <div class="kv"><span class="k">Port</span><span class="v" id="port">—</span></div>
+    <div class="kv"><span class="k">Connect</span><span class="v">frida -H</span></div>
+    <code id="cmd">…</code>
+    <div class="hint" id="hint"></div>
+  </div>
+
+<script>
+  var MOD = "/data/adb/modules/magisk-florida";
+  var cbId = 0;
+
+  function sh(cmd) {
+    return new Promise(function (res, rej) {
+      if (typeof ksu === "undefined" || !ksu.exec) {
+        rej("Open this page from the KernelSU / Magisk manager (WebUI).");
+        return;
+      }
+      var cb = "__ksu_cb_" + (cbId++);
+      window[cb] = function (errno, stdout, stderr) {
+        delete window[cb];
+        if (errno === 0) res((stdout || "").trim());
+        else rej((stderr || "command failed").trim());
+      };
+      ksu.exec(cmd, "{}", cb);
+    });
+  }
+
+  function render(state) {
+    var on = state === "running";
+    document.getElementById("dot").className = "dot " + (on ? "on" : "off");
+    document.getElementById("label").textContent = on ? "Running" : "Stopped";
+    document.getElementById("start").disabled = on;
+    document.getElementById("stop").disabled = !on;
+  }
+
+  function refresh() {
+    sh("sh " + MOD + "/webui.sh status").then(render).catch(function (e) {
+      document.getElementById("label").textContent = "Error";
+      document.getElementById("hint").textContent = e;
+    });
+  }
+
+  function loadInfo() {
+    sh("sh " + MOD + "/webui.sh info").then(function (out) {
+      var p = out.split(" ");
+      var name = p[0] || "?", port = p[1] || "27042";
+      document.getElementById("bin").textContent = name;
+      document.getElementById("port").textContent = port;
+      var fwd = port === "27042"
+        ? "frida -U -f com.example.app -l script.js"
+        : "adb forward tcp:" + port + " tcp:" + port + "\nfrida -H 127.0.0.1:" + port + " -f com.example.app -l script.js";
+      document.getElementById("cmd").textContent = fwd;
+    }).catch(function () {});
+  }
+
+  function doStart() {
+    document.getElementById("start").disabled = true;
+    sh("sh " + MOD + "/webui.sh start").then(render).catch(refresh);
+  }
+  function doStop() {
+    document.getElementById("stop").disabled = true;
+    sh("sh " + MOD + "/webui.sh stop").then(render).catch(refresh);
+  }
+
+  loadInfo();
+  refresh();
+  setInterval(refresh, 4000);
+</script>
+</body>
+</html>

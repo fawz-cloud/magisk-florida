@@ -16,7 +16,7 @@ set -x
     exit 0
 }
 
-result="$(busybox pgrep 'frida-server')"
+result="$(busybox pgrep "$SRV_NAME")"
 if [ -n "$result" ]; then
     echo "[-] Stopping Frida-server..."
     busybox kill -9 $result
