@@ -181,10 +181,17 @@ on_install() {
   F_BINDIR="$MODPATH/bin"
   mkdir -p "$F_BINDIR" || abort "! Failed to create module bin directory"
 
+  # Randomize the server binary name so /proc/*/cmdline and `pgrep frida-server`
+  # scans find nothing. Name is persisted for the boot scripts to read.
+  # ponytail: kernel uuid is always present on Android; fallback keeps install safe.
+  RAND_NAME="fs$(cat /proc/sys/kernel/random/uuid 2>/dev/null | tr -dc 'a-z0-9' | cut -c1-8)"
+  [ "$RAND_NAME" = "fs" ] && RAND_NAME="fsd$$"
+  echo "$RAND_NAME" > "$F_BINDIR/.srvname"
+
   ui_print "- Installing Frida to module bin..."
   unzip -ojq "$ZIPFILE" "files/frida-server-$F_ARCH" -d "$F_BINDIR" \
     || abort "! Failed to extract Frida binary"
-  mv -f "$F_BINDIR/frida-server-$F_ARCH" "$F_BINDIR/frida-server" \
+  mv -f "$F_BINDIR/frida-server-$F_ARCH" "$F_BINDIR/$RAND_NAME" \
     || abort "! Failed to install Frida binary"
 }
 
@@ -198,7 +205,9 @@ set_permissions() {
     || abort "! Failed to set default permissions"
 
   # Custom permissions
-  set_perm "$MODPATH/bin/frida-server" 0 2000 0755 u:object_r:system_file:s0 \
+  RAND_NAME="$(cat "$MODPATH/bin/.srvname" 2>/dev/null)"
+  [ -z "$RAND_NAME" ] && RAND_NAME="frida-server"
+  set_perm "$MODPATH/bin/$RAND_NAME" 0 2000 0755 u:object_r:system_file:s0 \
     || abort "! Failed to set Frida binary permissions"
 }
 

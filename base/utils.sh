@@ -1,6 +1,16 @@
 #!/bin/sh
 MODPATH=${0%/*}
-FRIDA_BIN="$MODPATH/bin/frida-server"
+
+# Randomized binary name chosen at install time (see customize.sh).
+SRV_NAME="$(cat "$MODPATH/bin/.srvname" 2>/dev/null)"
+[ -z "$SRV_NAME" ] && SRV_NAME="frida-server"
+FRIDA_BIN="$MODPATH/bin/$SRV_NAME"
+
+# Listen port. 27042 is the frida default, so plain `frida -U` / `frida -D` USB
+# mode works with no port forwarding. Set to a non-default value for port-scan
+# stealth (then connect via `adb forward tcp:PORT tcp:PORT && frida -H 127.0.0.1:PORT`).
+FRIDA_PORT="27042"
+
 PATH="$MODPATH/bin:$PATH:/data/adb/ap/bin:/data/adb/magisk:/data/adb/ksu/bin"
 
 # log
@@ -16,7 +26,7 @@ check_frida_is_up() {
     counter=0
 
     while [ $counter -lt $timeout ]; do
-        result="$(busybox pgrep 'frida-server')"
+        result="$(busybox pgrep "$SRV_NAME")"
         if [ -n "$result" ]; then
             echo "[-] Frida-server is running... 💉😜"
             string="description=Run frida-server on boot: ✅ (active)"
@@ -43,7 +53,7 @@ start_frida_server() {
     return 1
   fi
 
-  "$FRIDA_BIN" -D
+  "$FRIDA_BIN" -D -l "127.0.0.1:$FRIDA_PORT"
 }
 
 wait_for_boot() {

@@ -1,12 +1,13 @@
-# MagiskFrida
+# MagiskFlorida
 > [Frida](https://frida.re) is a dynamic instrumentation toolkit for developers, reverse-engineers, and security researchers
 
-> [MagiskFrida](https://github.com/ViRb3/magisk-frida) lets you run frida-server on boot with [Magisk](https://github.com/topjohnwu/Magisk)
+> MagiskFlorida runs an **anti-detection** frida-server (built from [Florida](https://github.com/Ylarod/Florida)) on boot with [Magisk](https://github.com/topjohnwu/Magisk), KernelSU and APatch
 
 ## Supported architectures
 - `arm64`, `arm`, `x86`, `x86_64`
 
-## How fast are frida-server updates?
-Instant! This module is hooked to the official Frida build process
+## Stealth
+- Server binary is installed under a randomized name (defeats `pgrep frida-server` / cmdline scans)
+- Anti-detection server spoofs frida string/symbol/thread signatures
 
-## For issues and more information, check out the [main project repo](https://github.com/ViRb3/magisk-frida)
+## For issues and more information, check out the [project repo](https://github.com/fawz-cloud/magisk-florida)

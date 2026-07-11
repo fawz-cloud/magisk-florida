@@ -10,7 +10,13 @@ import concurrent.futures
 import json
 import re
 
+import gzip
+
 import requests
+
+# Fork of Ylarod/Florida with anti-detection patches rebased onto current Frida.
+# Builds anti-detection frida-server, same tag as upstream Frida.
+FLORIDA_REPO = "fawz-cloud/Florida"
 
 PATH_BASE = Path(__file__).parent.resolve()
 PATH_BASE_MODULE: Path = PATH_BASE.joinpath("base")
@@ -44,7 +50,8 @@ def download_file(url: str, path: Path):
 def extract_file(archive_path: Path, dest_path: Path):
     logger.info(f"Extracting '{archive_path.name}' to '{dest_path.name}'")
 
-    with lzma.open(archive_path) as f:
+    opener = gzip.open if archive_path.suffix == ".gz" else lzma.open
+    with opener(archive_path) as f:
         file_content = f.read()
         path = dest_path.parent
 
@@ -61,13 +68,13 @@ def generate_version_code(project_tag: str) -> int:
 
 
 def create_module_prop(path: Path, project_tag: str):
-    module_prop = f"""id=magisk-frida
-name=MagiskFrida
+    module_prop = f"""id=magisk-florida
+name=MagiskFlorida
 version={project_tag}
 versionCode={generate_version_code(project_tag)}
-author=ViRb3 & enovella
-updateJson=https://github.com/ViRb3/magisk-frida/releases/latest/download/updater.json
-description=Run frida-server on boot"""
+author=ViRb3 & enovella (Florida fork)
+updateJson=https://github.com/fawz-cloud/magisk-florida/releases/latest/download/updater.json
+description=Run anti-detection frida-server on boot"""
 
     with open(path.joinpath("module.prop"), "w", newline="\n") as f:
         f.write(module_prop)
@@ -88,9 +95,9 @@ def fill_module(arch: str, frida_tag: str, project_tag: str):
     logger.info(f"Filling module for arch '{arch}'")
 
     frida_download_url = (
-        f"https://github.com/frida/frida/releases/download/{frida_tag}/"
+        f"https://github.com/{FLORIDA_REPO}/releases/download/{frida_tag}/"
     )
-    frida_server = f"frida-server-{frida_tag}-android-{arch}.xz"
+    frida_server = f"florida-server-{frida_tag}-android-{arch}.gz"
     frida_server_path = PATH_DOWNLOADS.joinpath(frida_server)
 
     download_file(frida_download_url + frida_server, frida_server_path)
@@ -105,8 +112,8 @@ def create_updater_json(project_tag: str):
     updater = {
         "version": project_tag,
         "versionCode": generate_version_code(project_tag),
-        "zipUrl": f"https://github.com/ViRb3/magisk-frida/releases/download/{project_tag}/MagiskFrida-{project_tag}.zip",
-        "changelog": "https://raw.githubusercontent.com/ViRb3/magisk-frida/master/CHANGELOG.md",
+        "zipUrl": f"https://github.com/fawz-cloud/magisk-florida/releases/download/{project_tag}/MagiskFlorida-{project_tag}.zip",
+        "changelog": "https://raw.githubusercontent.com/fawz-cloud/magisk-florida/master/CHANGELOG.md",
     }
 
     with open(PATH_BUILD.joinpath("updater.json"), "w", newline="\n") as f:
@@ -116,7 +123,7 @@ def create_updater_json(project_tag: str):
 def package_module(project_tag: str):
     logger.info("Packaging module")
 
-    module_zip = PATH_BUILD.joinpath(f"MagiskFrida-{project_tag}.zip")
+    module_zip = PATH_BUILD.joinpath(f"MagiskFlorida-{project_tag}.zip")
 
     with zipfile.ZipFile(module_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for root, _, files in os.walk(PATH_BUILD_TMP):
