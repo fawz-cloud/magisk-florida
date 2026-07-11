@@ -45,6 +45,21 @@ check_frida_is_up() {
     sed -i "s/^description=.*/$string/g" $MODPATH/module.prop
 }
 
+# Disable USAP (Unspecialized App Process pool). On Android 12+ and some Xiaomi/
+# OnePlus ROMs, USAP makes frida-server's spawn crash and reboot the device.
+# See frida/frida#1879, #2719, #2516. Only the property disable is ported here —
+# NOT `setenforce 0`, which would make SELinux permissive (a detection red flag).
+disable_usap() {
+  busybox pkill -f usap 2>/dev/null
+  if command -v resetprop >/dev/null 2>&1; then
+    resetprop -p persist.device_config.runtime_native.usap_pool_enabled false
+    resetprop sys.usap.enable false
+  else
+    setprop persist.device_config.runtime_native.usap_pool_enabled false 2>/dev/null
+    setprop sys.usap.enable false 2>/dev/null
+  fi
+}
+
 start_frida_server() {
   if [ ! -x "$FRIDA_BIN" ]; then
     echo "[-] Frida binary not found: $FRIDA_BIN"

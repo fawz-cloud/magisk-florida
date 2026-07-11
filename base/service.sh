@@ -10,6 +10,8 @@ set -x
 
 wait_for_boot
 
+disable_usap
+
 start_frida_server || exit $?
 
 check_frida_is_up
