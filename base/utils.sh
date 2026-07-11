@@ -6,10 +6,12 @@ SRV_NAME="$(cat "$MODPATH/bin/.srvname" 2>/dev/null)"
 [ -z "$SRV_NAME" ] && SRV_NAME="frida-server"
 FRIDA_BIN="$MODPATH/bin/$SRV_NAME"
 
-# Listen port. 27042 is the frida default, so plain `frida -U` / `frida -D` USB
-# mode works with no port forwarding. Set to a non-default value for port-scan
-# stealth (then connect via `adb forward tcp:PORT tcp:PORT && frida -H 127.0.0.1:PORT`).
-FRIDA_PORT="27042"
+# Listen port, persisted in bin/.srvport (settable from the WebUI). 27042 is the
+# frida default, so plain `frida -U` / `frida -D` USB mode works with no forwarding.
+# A non-default port adds port-scan stealth (connect via
+# `adb forward tcp:PORT tcp:PORT && frida -H 127.0.0.1:PORT`).
+FRIDA_PORT="$(cat "$MODPATH/bin/.srvport" 2>/dev/null)"
+[ -z "$FRIDA_PORT" ] && FRIDA_PORT="27042"
 
 PATH="$MODPATH/bin:$PATH:/data/adb/ap/bin:/data/adb/magisk:/data/adb/ksu/bin"
 

@@ -27,6 +27,10 @@
   .kv .v { font-family:ui-monospace,monospace; }
   code { display:block; background:#0b0d11; border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:8px; font:12px/1.5 ui-monospace,monospace; color:#cfe3ff; overflow-x:auto; white-space:pre; }
   .hint { color:var(--mut); font-size:12px; margin-top:10px; }
+  .portset { display:flex; gap:10px; margin-top:12px; }
+  .portset input { flex:1; min-width:0; background:#0b0d11; border:1px solid var(--line); border-radius:10px; color:var(--fg); padding:12px; font:15px ui-monospace,monospace; }
+  .portset input:focus { outline:none; border-color:var(--acc); }
+  .portset button { flex:none; width:auto; padding:12px 18px; }
 </style>
 </head>
 <body>
@@ -44,7 +48,12 @@
   <div class="card">
     <div class="kv"><span class="k">Binary</span><span class="v" id="bin">—</span></div>
     <div class="kv"><span class="k">Port</span><span class="v" id="port">—</span></div>
-    <div class="kv"><span class="k">Connect</span><span class="v">frida -H</span></div>
+    <div class="portset">
+      <input id="portinput" type="number" inputmode="numeric" min="1" max="65535" placeholder="new port (1–65535)">
+      <button id="apply" onclick="doSetPort()">Apply</button>
+    </div>
+    <div class="hint" id="porthint"></div>
+    <div class="kv" style="margin-top:8px"><span class="k">Connect</span><span class="v">frida -H</span></div>
     <code id="cmd">…</code>
     <div class="hint" id="hint"></div>
   </div>
@@ -95,6 +104,30 @@
         : "adb forward tcp:" + port + " tcp:" + port + "\nfrida -H 127.0.0.1:" + port + " -f com.example.app -l script.js";
       document.getElementById("cmd").textContent = fwd;
     }).catch(function () {});
+  }
+
+  function doSetPort() {
+    var el = document.getElementById("portinput");
+    var p = (el.value || "").trim();
+    var hint = document.getElementById("porthint");
+    if (!/^\d+$/.test(p) || +p < 1 || +p > 65535) {
+      hint.textContent = "Enter a port between 1 and 65535.";
+      return;
+    }
+    var btn = document.getElementById("apply");
+    btn.disabled = true;
+    hint.textContent = "Applying & restarting server…";
+    sh("sh " + MOD + "/webui.sh setport " + p).then(function (state) {
+      btn.disabled = false;
+      if (state === "invalid") { hint.textContent = "Rejected: invalid port."; return; }
+      hint.textContent = "";
+      el.value = "";
+      render(state);
+      loadInfo();
+    }).catch(function (e) {
+      btn.disabled = false;
+      hint.textContent = e;
+    });
   }
 
   function doStart() {
