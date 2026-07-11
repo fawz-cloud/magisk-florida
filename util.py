@@ -1,3 +1,4 @@
+import os
 import re
 import requests
 import subprocess
@@ -11,7 +12,13 @@ def strip_revision(tag) -> str:
 # gets last tag of GitHub project
 def get_last_github_tag(project_name) -> str:
     releases_url = f"https://api.github.com/repos/{project_name}/releases/latest"
-    r = requests.get(releases_url)
+    # Authenticate when a token is available (CI) to avoid the 60/hour
+    # unauthenticated rate limit that silently breaks the scheduled build.
+    headers = {}
+    token = os.getenv("GITHUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    r = requests.get(releases_url, headers=headers)
     r.raise_for_status()
     releases = r.json()
     # TODO: don't assume order
