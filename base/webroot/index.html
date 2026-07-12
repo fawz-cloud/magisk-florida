@@ -51,6 +51,7 @@
     <div class="portset">
       <input id="portinput" type="number" inputmode="numeric" min="1" max="65535" placeholder="new port (1–65535)">
       <button id="apply" onclick="doSetPort()">Apply</button>
+      <button id="reset" onclick="doSetPort(27042)" style="background:var(--card);border:1px solid var(--line);color:var(--mut)">Reset</button>
     </div>
     <div class="hint" id="porthint"></div>
     <div class="kv" style="margin-top:8px"><span class="k">Connect</span><span class="v">frida -H</span></div>
@@ -106,26 +107,26 @@
     }).catch(function () {});
   }
 
-  function doSetPort() {
+  function doSetPort(forcedPort) {
     var el = document.getElementById("portinput");
-    var p = (el.value || "").trim();
+    var p = forcedPort !== undefined ? String(forcedPort) : (el.value || "").trim();
     var hint = document.getElementById("porthint");
     if (!/^\d+$/.test(p) || +p < 1 || +p > 65535) {
       hint.textContent = "Enter a port between 1 and 65535.";
       return;
     }
-    var btn = document.getElementById("apply");
-    btn.disabled = true;
+    var applyBtn = document.getElementById("apply"), resetBtn = document.getElementById("reset");
+    applyBtn.disabled = true; resetBtn.disabled = true;
     hint.textContent = "Applying & restarting server…";
     sh("sh " + MOD + "/webui.sh setport " + p).then(function (state) {
-      btn.disabled = false;
+      applyBtn.disabled = false; resetBtn.disabled = false;
       if (state === "invalid") { hint.textContent = "Rejected: invalid port."; return; }
       hint.textContent = "";
       el.value = "";
       render(state);
       loadInfo();
     }).catch(function (e) {
-      btn.disabled = false;
+      applyBtn.disabled = false; resetBtn.disabled = false;
       hint.textContent = e;
     });
   }
