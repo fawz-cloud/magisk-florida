@@ -5,56 +5,63 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MagiskFlorida</title>
 <style>
-  :root { --bg:#0f1115; --card:#1a1d24; --fg:#e6e8ee; --mut:#8b92a5; --acc:#4f9cff; --ok:#38c172; --off:#e0554e; --line:#2a2e38; }
+  :root { --bg:#0d0f13; --panel:#15181e; --fg:#dde1e8; --mut:#7a8194; --acc:#5b9dff; --ok:#3fb96f; --off:#d9534f; --line:#252932; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; padding:env(safe-area-inset-top) 16px 40px; }
-  h1 { font-size:20px; margin:24px 0 4px; }
-  .sub { color:var(--mut); font-size:13px; margin-bottom:20px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:16px; }
-  .status { display:flex; align-items:center; gap:12px; }
-  .dot { width:12px; height:12px; border-radius:50%; background:var(--mut); flex:none; }
-  .dot.on { background:var(--ok); box-shadow:0 0 10px var(--ok); }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 ui-monospace,"SF Mono",Consolas,monospace; padding:env(safe-area-inset-top) 14px 40px; }
+  header { display:flex; align-items:baseline; justify-content:space-between; margin:22px 0 2px; flex-wrap:wrap; gap:6px; }
+  h1 { font-size:16px; margin:0; letter-spacing:.02em; }
+  .badge { font-size:11px; color:var(--mut); border:1px solid var(--line); border-radius:4px; padding:2px 7px; }
+  .badge.detected { color:var(--acc); border-color:var(--acc); }
+  .sub { color:var(--mut); font-size:12px; margin-bottom:18px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:14px; margin-bottom:14px; }
+  .status { display:flex; align-items:center; gap:10px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--mut); flex:none; }
+  .dot.on { background:var(--ok); }
   .dot.off { background:var(--off); }
-  .status .label { font-size:17px; font-weight:600; }
-  .row { display:flex; gap:12px; margin-top:16px; }
-  button { flex:1; border:0; border-radius:10px; padding:13px; font-size:15px; font-weight:600; color:#fff; background:var(--acc); }
-  button:active { opacity:.7; }
-  button.stop { background:var(--off); }
-  button:disabled { opacity:.4; }
-  .kv { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .status .label { font-size:14px; font-weight:600; }
+  .row { display:flex; gap:8px; margin-top:14px; }
+  button { flex:1; border:1px solid var(--line); border-radius:5px; padding:10px; font:13px/1 ui-monospace,monospace; font-weight:600; color:var(--fg); background:#1b1f27; }
+  button:active { opacity:.6; }
+  button.primary { background:var(--acc); border-color:var(--acc); color:#0b0d11; }
+  button.stop { background:var(--off); border-color:var(--off); color:#0b0d11; }
+  button.ghost { background:transparent; color:var(--mut); }
+  button:disabled { opacity:.35; }
+  .kv { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line); font-size:12.5px; }
   .kv:last-child { border-bottom:0; }
   .kv .k { color:var(--mut); }
-  .kv .v { font-family:ui-monospace,monospace; }
-  code { display:block; background:#0b0d11; border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:8px; font:12px/1.5 ui-monospace,monospace; color:#cfe3ff; overflow-x:auto; white-space:pre; }
-  .hint { color:var(--mut); font-size:12px; margin-top:10px; }
-  .portset { display:flex; gap:10px; margin-top:12px; }
-  .portset input { flex:1; min-width:0; background:#0b0d11; border:1px solid var(--line); border-radius:10px; color:var(--fg); padding:12px; font:15px ui-monospace,monospace; }
+  code { display:block; background:#0a0c10; border:1px solid var(--line); border-radius:4px; padding:9px; margin-top:8px; font-size:11.5px; line-height:1.5; color:#a9c6ee; overflow-x:auto; white-space:pre; }
+  .hint { color:var(--mut); font-size:11px; margin-top:8px; min-height:14px; }
+  .portset { display:flex; gap:8px; margin-top:12px; }
+  .portset input { flex:1; min-width:0; background:#0a0c10; border:1px solid var(--line); border-radius:5px; color:var(--fg); padding:10px; font:13px ui-monospace,monospace; }
   .portset input:focus { outline:none; border-color:var(--acc); }
-  .portset button { flex:none; width:auto; padding:12px 18px; }
+  .portset button { flex:none; width:auto; padding:10px 14px; }
 </style>
 </head>
 <body>
-  <h1>MagiskFlorida</h1>
-  <div class="sub">Anti-detection frida-server control</div>
+  <header>
+    <h1>MagiskFlorida</h1>
+    <span class="badge" id="mgrBadge">detecting…</span>
+  </header>
+  <div class="sub">anti-detection frida-server control</div>
 
-  <div class="card">
-    <div class="status"><span id="dot" class="dot"></span><span id="label" class="label">Checking…</span></div>
+  <div class="panel">
+    <div class="status"><span id="dot" class="dot"></span><span id="label" class="label">checking…</span></div>
     <div class="row">
-      <button id="start" onclick="doStart()" disabled>Start</button>
-      <button id="stop" class="stop" onclick="doStop()" disabled>Stop</button>
+      <button id="start" class="primary" onclick="doStart()" disabled>start</button>
+      <button id="stop" class="stop" onclick="doStop()" disabled>stop</button>
     </div>
   </div>
 
-  <div class="card">
-    <div class="kv"><span class="k">Binary</span><span class="v" id="bin">—</span></div>
-    <div class="kv"><span class="k">Port</span><span class="v" id="port">—</span></div>
+  <div class="panel">
+    <div class="kv"><span class="k">binary</span><span id="bin">—</span></div>
+    <div class="kv"><span class="k">port</span><span id="port">—</span></div>
     <div class="portset">
-      <input id="portinput" type="number" inputmode="numeric" min="1" max="65535" placeholder="new port (1–65535)">
-      <button id="apply" onclick="doSetPort()">Apply</button>
-      <button id="reset" onclick="doSetPort(27042)" style="background:var(--card);border:1px solid var(--line);color:var(--mut)">Reset</button>
+      <input id="portinput" type="number" inputmode="numeric" min="1" max="65535" placeholder="new port (1-65535)">
+      <button class="primary" id="apply" onclick="doSetPort()">apply</button>
+      <button class="ghost" id="reset" onclick="doSetPort(27042)">reset</button>
     </div>
     <div class="hint" id="porthint"></div>
-    <div class="kv" style="margin-top:8px"><span class="k">Connect</span><span class="v">frida -H</span></div>
+    <div class="kv" style="margin-top:6px"><span class="k">connect</span><span>frida -H</span></div>
     <code id="cmd">…</code>
     <div class="hint" id="hint"></div>
   </div>
@@ -63,33 +70,58 @@
   var MOD = "/data/adb/modules/magisk-florida";
   var cbId = 0;
 
+  // Different manager apps inject different globals into the WebUI webview,
+  // but all expose the same exec(cmd, opts, callback) shape: KernelSU Manager
+  // -> ksu, APatch Manager -> apatch, Magisk via WebUI-X/MMRL -> mmrl.
+  var BRIDGES = [
+    { key: "mmrl", label: "MMRL" },
+    { key: "ksu", label: "KernelSU" },
+    { key: "apatch", label: "APatch" }
+  ];
+
+  function detectBridge() {
+    for (var i = 0; i < BRIDGES.length; i++) {
+      var b = BRIDGES[i];
+      if (typeof window[b.key] !== "undefined" && window[b.key].exec) return b;
+    }
+    return null;
+  }
+
   function sh(cmd) {
     return new Promise(function (res, rej) {
-      if (typeof ksu === "undefined" || !ksu.exec) {
-        rej("Open this page from the KernelSU / Magisk manager (WebUI).");
+      var bridge = detectBridge();
+      if (!bridge) {
+        rej("Open this page from a WebUI-capable manager (KernelSU, APatch, or Magisk+WebUI-X).");
         return;
       }
-      var cb = "__ksu_cb_" + (cbId++);
+      var cb = "__wui_cb_" + (cbId++);
       window[cb] = function (errno, stdout, stderr) {
         delete window[cb];
         if (errno === 0) res((stdout || "").trim());
         else rej((stderr || "command failed").trim());
       };
-      ksu.exec(cmd, "{}", cb);
+      window[bridge.key].exec(cmd, "{}", cb);
     });
+  }
+
+  function showBridge() {
+    var b = detectBridge();
+    var el = document.getElementById("mgrBadge");
+    if (b) { el.textContent = b.label; el.classList.add("detected"); }
+    else { el.textContent = "no bridge"; }
   }
 
   function render(state) {
     var on = state === "running";
     document.getElementById("dot").className = "dot " + (on ? "on" : "off");
-    document.getElementById("label").textContent = on ? "Running" : "Stopped";
+    document.getElementById("label").textContent = on ? "running" : "stopped";
     document.getElementById("start").disabled = on;
     document.getElementById("stop").disabled = !on;
   }
 
   function refresh() {
     sh("sh " + MOD + "/webui.sh status").then(render).catch(function (e) {
-      document.getElementById("label").textContent = "Error";
+      document.getElementById("label").textContent = "error";
       document.getElementById("hint").textContent = e;
     });
   }
@@ -117,10 +149,10 @@
     }
     var applyBtn = document.getElementById("apply"), resetBtn = document.getElementById("reset");
     applyBtn.disabled = true; resetBtn.disabled = true;
-    hint.textContent = "Applying & restarting server…";
+    hint.textContent = "applying & restarting server…";
     sh("sh " + MOD + "/webui.sh setport " + p).then(function (state) {
       applyBtn.disabled = false; resetBtn.disabled = false;
-      if (state === "invalid") { hint.textContent = "Rejected: invalid port."; return; }
+      if (state === "invalid") { hint.textContent = "rejected: invalid port."; return; }
       hint.textContent = "";
       el.value = "";
       render(state);
@@ -140,6 +172,7 @@
     sh("sh " + MOD + "/webui.sh stop").then(render).catch(refresh);
   }
 
+  showBridge();
   loadInfo();
   refresh();
   setInterval(refresh, 4000);

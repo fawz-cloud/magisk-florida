@@ -112,7 +112,7 @@ def create_updater_json(project_tag: str):
     updater = {
         "version": project_tag,
         "versionCode": generate_version_code(project_tag),
-        "zipUrl": f"https://github.com/fawz-cloud/magisk-florida/releases/download/{project_tag}/MagiskFlorida-{project_tag}.zip",
+        "zipUrl": f"https://github.com/fawz-cloud/magisk-florida/releases/download/{project_tag}/MagiskFlorida-{project_tag}-universal.zip",
         "changelog": "https://raw.githubusercontent.com/fawz-cloud/magisk-florida/master/CHANGELOG.md",
     }
 
@@ -120,22 +120,30 @@ def create_updater_json(project_tag: str):
         f.write(json.dumps(updater, indent=4))
 
 
-def package_module(project_tag: str):
-    logger.info("Packaging module")
+def package_module(project_tag: str, arch: str = None):
+    # arch=None packages every downloaded frida-server-* binary ("universal",
+    # ~100MB, works on any device). arch="arm64" etc packages only that one
+    # binary (~25MB) under the same in-zip filename customize.sh expects.
+    suffix = arch or "universal"
+    logger.info(f"Packaging module ({suffix})")
 
-    module_zip = PATH_BUILD.joinpath(f"MagiskFlorida-{project_tag}.zip")
+    module_zip = PATH_BUILD.joinpath(f"MagiskFlorida-{project_tag}-{suffix}.zip")
 
     with zipfile.ZipFile(module_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for root, _, files in os.walk(PATH_BUILD_TMP):
             for file_name in files:
                 if file_name == "placeholder" or file_name == ".gitkeep":
                     continue
+                if (
+                    arch
+                    and file_name.startswith("frida-server-")
+                    and file_name != f"frida-server-{arch}"
+                ):
+                    continue
                 zf.write(
                     Path(root).joinpath(file_name),
                     arcname=Path(root).relative_to(PATH_BUILD_TMP).joinpath(file_name),
                 )
-
-    shutil.rmtree(PATH_BUILD_TMP)
 
 
 def do_build(frida_tag: str, project_tag: str):
@@ -154,6 +162,11 @@ def do_build(frida_tag: str, project_tag: str):
             raise future.exception()
 
     package_module(project_tag)
+    for arch in archs:
+        package_module(project_tag, arch=arch)
+
+    shutil.rmtree(PATH_BUILD_TMP)
+
     create_updater_json(project_tag)
 
     logger.info("Done")
